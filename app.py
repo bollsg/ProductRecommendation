@@ -24,7 +24,7 @@ def productList():
     user=request.args.get("userid")
     data=recommend.getTop5Products(user)  ## calling the method for top 5 products
     # check if there was an error or did it return the list.
-    if data.startswith("ERROR") : 
+    if data.startswith("ERROR") :    ### checking if the user is not in db. ERROR was we set in model.py
         print(data + "Error") ## Print the error for futher debugging
         return render_template('index.html', error=data)
     return data

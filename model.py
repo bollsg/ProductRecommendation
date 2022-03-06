@@ -1,6 +1,7 @@
 # import libraties
 import pickle
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn import *
 import pandas as pd
 import numpy as np
 from nltk.corpus import stopwords
@@ -22,8 +23,8 @@ class ProductRecommendation:
         nltk.download('wordnet')
         self.data = pickle.load(open('data.pkl','rb'))
         self.user_final_rating = pickle.load(open('user_final_rating.pkl','rb'))
-        self.model = pickle.load(open('logistic_regression.pkl','rb'))
-        self.raw_data = pd.read_csv("sample30.csv")
+        self.model = pickle.load(open('logistic_regression.pkl','rb'))   ### logistic regression was the best performed hence using it
+        self.raw_data = pd.read_csv("sample30.csv",usecols=['id','name','brand','categories','manufacturer'])  ## only reading  what is required
         self.data = pd.concat([self.raw_data[['id','name','brand','categories','manufacturer']],self.data], axis=1)
 
 
@@ -36,13 +37,14 @@ class ProductRecommendation:
             Please try again with a user from 'Available Users' list provided above. ".format(user)
             return errorMessage       
         tfs=pd.read_pickle('tfidf.pkl')
-        temp=self.data[self.data.id.isin(items)]
-        X = tfs.transform(temp['Review'].values.astype(str))
-        temp=temp[['id']]
-        temp['prediction'] = self.model.predict(X)
-        temp['prediction'] = temp['prediction'].map({'Postive':1,'Negative':0})
-        temp=temp.groupby('id').sum()
-        temp['positive_percent']=temp.apply(lambda x: x['prediction']/sum(x), axis=1)
-        final_list=temp.sort_values('positive_percent', ascending=False).iloc[:5,:].index
-        print(len(final_list))
+        ##print(items)
+        df=self.data[self.data.id.isin(items)]
+        ##print(temp)
+        X = tfs.transform(df['Review'].values.astype(str))
+        df=df[['id']]
+        df['prediction'] = self.model.predict(X)
+        df['prediction'] = df['prediction'].map({'Postive':1,'Negative':0})
+        df=df.groupby('id').sum()
+        df['positive_percent']=df.apply(lambda x: x['prediction']/sum(x), axis=1)
+        final_list=df.sort_values('positive_percent', ascending=False).iloc[:5,:].index  ### only taking 5 of the top predictions as required
         return self.data[self.data.id.isin(final_list)][['id', 'brand', 'categories', 'manufacturer', 'name']].drop_duplicates().to_json(orient="table")
